@@ -7,6 +7,10 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -17,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView listcall;
     List<ItemLog> calllog=new ArrayList<ItemLog>();
     TextView textView;
+    FirebaseDatabase database;
+    DatabaseReference myRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,7 +30,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         //textView = (TextView) findViewById(R.id.txtcalllog);
         listcall = findViewById(R.id.listacalllog);
-
+        database = FirebaseDatabase.getInstance();
+        myRef = database.getReference("call-backup");
 
 
         Cursor mCursor=managedQuery(CallLog.Calls.CONTENT_URI,null,null,null,null);
@@ -33,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
         int duration=mCursor.getColumnIndex(CallLog.Calls.DURATION);
         int type=mCursor.getColumnIndex(CallLog.Calls.TYPE);
         StringBuilder sb = new StringBuilder();
+        String cad="";
         while(mCursor.moveToNext()){
             String phnumber=mCursor.getString(number);
             String calldate=mCursor.getString(date);
@@ -50,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
                     callTypeStr="Llamada Perdida";
                     break;
             }
-            sb.append(" Numero telefonico: "+phnumber);
+           /* sb.append(" Numero telefonico: "+phnumber);
             sb.append(System.getProperty("line.separator"));
             sb.append(" Duracion de llamada: "+callduration);
             sb.append(System.getProperty("line.separator"));
@@ -59,9 +67,12 @@ public class MainActivity extends AppCompatActivity {
             sb.append(" Date de llamada: "+calldate);
             sb.append(System.getProperty("line.separator"));
             sb.append(" ----------------------- ");
-            sb.append(System.getProperty("line.separator"));
+            sb.append(System.getProperty("line.separator"));*/
 
-            calllog.add(new ItemLog(sb.toString()));
+           Date fec = new Date(Long.parseLong(calldate));
+            cad="Numero: "+phnumber+"\n"+"Duracion(s): "+callduration+"\n"+"Tipo: "+callTypeStr+"\n"+"Fecha: "+fec.toString()+"\n";
+
+            calllog.add(new ItemLog(cad));
         }
 
         //textView.setText(sb.toString());
@@ -72,5 +83,26 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView.LayoutManager layoutManager=new LinearLayoutManager(this);
         listcall.setLayoutManager(layoutManager);
 
+        hilos();
+        Toast.makeText(getApplicationContext(),"Se esta respaldando la informacion..",Toast.LENGTH_LONG).show();
+
+
+    }
+
+    private void UnSegundo() {
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public void hilos() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                UnSegundo();
+                myRef.setValue(calllog);
+            }
+        }).start();
     }
 }
